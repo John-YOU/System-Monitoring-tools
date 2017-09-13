@@ -1,7 +1,7 @@
 ### Ensure that you are in workplace
 ### arguments: 1. pid 2. frequency
 if [ -z "$1" ];then
-        echo "please specify the pid"
+        echo "please specify the pid(int)"
         exit
 fi
 if [ ! -z "$2" ];then
