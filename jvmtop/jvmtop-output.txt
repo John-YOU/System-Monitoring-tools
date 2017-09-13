@@ -1,0 +1,9 @@
+Recorded Time: Tue Sep 12 20:38:28 CST 2017
+ JvmTop 0.8.0 alpha - 20:38:28, x86_64,  4 cpus, Mac OS X 10.10., load avg 2.22
+ http://code.google.com/p/jvmtop
+
+LOCAL-TIME                      PID MAIN-CLASS      HPCUR HPMAX NHCUR NHMAX    CPU     GC    VM USERNAME   #T DL
+Tue Sep 12 20:38:30 CST 2017   4336 m.jvmtop.JvmTop   11m  910m   14m   n/a 52.41%  0.00% O8U13   youhan   14   
+Tue Sep 12 20:38:30 CST 2017   4288                  137m  910m  146m   n/a 18.72%  0.00% O8U13   youhan   35   
+Tue Sep 12 20:38:31 CST 2017   4336 m.jvmtop.JvmTop   14m  910m   14m   n/a 13.90%  0.00% O8U13   youhan   14   
+Tue Sep 12 20:38:31 CST 2017   4288                  137m  910m  147m   n/a  7.66%  0.00% O8U13   youhan   35   
