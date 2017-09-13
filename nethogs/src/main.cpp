@@ -1,8 +1,6 @@
 #include "nethogs.cpp"
 #include <fcntl.h>
 #include <vector>
-#include <string.h>
-#include <fstream>
 
 #ifdef __linux__
 #include <linux/limits.h>
@@ -16,13 +14,12 @@
 static std::pair<int, int> self_pipe = std::make_pair(-1, -1);
 static time_t last_refresh_time = 0;
 
-
 // selectable file descriptors for the main loop
 static fd_set pc_loop_fd_set;
 static std::vector<int> pc_loop_fd_list;
 static bool pc_loop_use_select = true;
 
-static void versiondisplay(void) { std::cout << version << "\n"; }
+///static void versiondisplay(void) { std::cout << version << "\n"; }
 
 static void help(bool iserror) {
   std::ostream &output = (iserror ? std::cerr : std::cout);
@@ -34,7 +31,7 @@ static void help(bool iserror) {
   output << "		-V : prints version.\n";
   output << "		-h : prints this help.\n";
   output << "		-b : bughunt mode - implies tracemode.\n";
-  output << "		-d : delay for update refresh rate in seconds. default "
+  output << "		-d : delay for update refresh rate in seconds(should be integer value). default "
             "is 1.\n";
   output << "		-v : view mode (0 = KB/s, 1 = total KB, 2 = total B, 3 "
             "= total MB). default is 0.\n";
@@ -42,12 +39,12 @@ static void help(bool iserror) {
   output << "		-t : tracemode.\n";
   // output << "		-f : format of packets on interface, default is
   // eth.\n";
-  output << "		-p : sniff in promiscious mode (not recommended).\n";
-  output << "		-P : id of the process that to be traced\n";
+  output << "		-P : sniff in promiscious mode (not recommended).\n";
+  output << "		-p : id of the process that to be traced\n";
   output << "		-f : the file output path\n";
   output << "		-s : sort output by sent column.\n";
   output << "		-a : monitor all devices, even loopback/stopped ones.\n";
-  output << "		device : device(s) to monitor. default is all "
+  output << "		     device : device(s) to monitor. default is all "
             "interfaces up and running excluding loopback\n";
   output << std::endl;
   /*
@@ -137,59 +134,60 @@ int main(int argc, char **argv) {
 
   int promisc = 0;
   bool all = false;
+  char *filter = NULL;
 
   int opt;
-  while ((opt = getopt(argc, argv, "Vahbtpd:f:P:v:c:sa")) != -1) {
-    switch (opt) {
-    case 'V':
-      exit(0);
-    case 'h':
-      help(false);
-      exit(0);
-    case 'b':
-      bughuntmode = true;
-      tracemode = true;
-      break;
-    case 't':
-      tracemode = true;
-      break;
-    case 'p':
-      promisc = 1;
-      break;
-    case 's':
-      sortRecv = false;
-      break;
-    case 'd':
-      refreshdelay = atoi(optarg);
-      break;
-    case 'v':
-      viewMode = atoi(optarg) % VIEWMODE_COUNT;
-      break;
-    case 'c':
-      refreshlimit = atoi(optarg);
-      break;
-    case 'a':
-      all = true;
-      break;
-    ///modify add file output path
-    case 'f':
-      outFilePath=optarg;
-      break;
-    case 'P':
-      tracingPid=atoi(optarg);
-      break;
-      ///end
-    default:
-      help(true);
-      exit(EXIT_FAILURE);
-    }
-  }
+  while ((opt = getopt(argc, argv, "VahbtPd:f:p:v:c:sa")) != -1) {
+     switch (opt) {
+     case 'V':
+       printf("%s modified-YH\n",getVersion());
+       exit(0);
+     case 'h':
+       help(false);
+       exit(0);
+     case 'b':
+       bughuntmode = true;
+       tracemode = true;
+       break;
+     case 't':
+       tracemode = true;
+       break;
+     case 'P':
+       promisc = 1;
+       break;
+     case 's':
+       sortRecv = false;
+       break;
+     case 'd':
+       refreshdelay = atoi(optarg);
+       break;
+     case 'v':
+       viewMode = atoi(optarg) % VIEWMODE_COUNT;
+       break;
+     case 'c':
+       refreshlimit = atoi(optarg);
+       break;
+     case 'a':
+       all = true;
+       break;
+     ///modify add file output path
+     case 'f':
+       outFilePath=optarg;
+       break;
+     case 'p':
+       tracingPid=atoi(optarg);
+       break;
+       ///end
+     default:
+       help(true);
+       exit(EXIT_FAILURE);
+     }
+   }
 
   device *devices = get_devices(argc - optind, argv + optind, all);
   if (devices == NULL)
     forceExit(false, "No devices to monitor. Use '-a' to allow monitoring "
                      "loopback interfaces or devices that are not up/running");
-
 
   if ((!tracemode) && (!DEBUG)) {
     init_ui();
@@ -225,16 +223,20 @@ int main(int argc, char **argv) {
 
   char errbuf[PCAP_ERRBUF_SIZE];
 
+  int nb_devices = 0;
+  int nb_failed_devices = 0;
+
   handle *handles = NULL;
   device *current_dev = devices;
   while (current_dev != NULL) {
+    ++nb_devices;
 
     if (!getLocal(current_dev->name, tracemode)) {
       forceExit(false, "getifaddrs failed while establishing local IP.");
     }
 
     dp_handle *newhandle =
-        dp_open_live(current_dev->name, BUFSIZ, promisc, 100, errbuf);
+        dp_open_live(current_dev->name, BUFSIZ, promisc, 100, filter, errbuf);
     if (newhandle != NULL) {
       dp_addcb(newhandle, dp_packet_ip, process_ip);
       dp_addcb(newhandle, dp_packet_ip6, process_ip6);
@@ -267,18 +269,19 @@ int main(int argc, char **argv) {
     } else {
       fprintf(stderr, "Error opening handler for device %s\n",
               current_dev->name);
+      ++nb_failed_devices;
     }
 
     current_dev = current_dev->next;
   }
 
+  if (nb_devices == nb_failed_devices) {
+    forceExit(false, "Error opening pcap handlers for all devices.\n");
+  }
+
   signal(SIGINT, &quit_cb);
 
-  fprintf(
-      stderr,
-      "Waiting for first packet to arrive (see sourceforge.net bug 1019381)\n");
   struct dpargs *userdata = (dpargs *)malloc(sizeof(struct dpargs));
-
 
   // Main loop:
   while (1) {
@@ -290,8 +293,12 @@ int main(int argc, char **argv) {
       userdata->sa_family = AF_UNSPEC;
       int retval = dp_dispatch(current_handle->content, -1, (u_char *)userdata,
                                sizeof(struct dpargs));
-      if (retval < 0)
-        std::cerr << "Error dispatching: " << retval << std::endl;
+      if (retval == -1)
+        std::cerr << "Error dispatching for device " << current_handle->devicename <<
+          ": " << dp_geterr(current_handle->content) << std::endl;
+      else if (retval < 0)
+        std::cerr << "Error dispatching for device " << current_handle->devicename <<
+          ": " << retval << std::endl;
       else if (retval != 0)
         packets_read = true;
     }
