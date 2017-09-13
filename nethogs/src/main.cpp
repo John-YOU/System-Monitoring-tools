@@ -43,10 +43,10 @@ static void help(bool iserror) {
   // output << "		-f : format of packets on interface, default is
   // eth.\n";
   output << "		-p : sniff in promiscious mode (not recommended).\n";
-  output << "       -P : id of the process that to be traced\n";
-  output << "       -f : the file output path\n";
+  output << "		-P : id of the process that to be traced\n";
+  output << "		-f : the file output path\n";
   output << "		-s : sort output by sent column.\n";
-  output << "   	-a : monitor all devices, even loopback/stopped ones.\n";
+  output << "		-a : monitor all devices, even loopback/stopped ones.\n";
   output << "		device : device(s) to monitor. default is all "
             "interfaces up and running excluding loopback\n";
   output << std::endl;

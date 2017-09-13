@@ -16,6 +16,7 @@ It's developped basing on Jvmtop, Iotop and Nethogs, but fixing some bugs in iot
 	make clean
 	sudo make install
 	cd ../work-place
+	chmod a+x ./work.sh
 
 ## Running the test
 You can choose to invoke the script to run Jvmtop, Nethogs and Iotop at the same time and in the same frequency.
