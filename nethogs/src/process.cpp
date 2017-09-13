@@ -65,10 +65,10 @@ Process *unknownudp;
 Process *unknownip;
 ProcList *processes;
 
-float tomb(u_int32_t bytes) { return ((double)bytes) / 1024 / 1024; }
-float tokb(u_int32_t bytes) { return ((double)bytes) / 1024; }
+float tomb(u_int64_t bytes) { return ((double)bytes) / 1024 / 1024; }
+float tokb(u_int64_t bytes) { return ((double)bytes) / 1024; }
 
-float tokbps(u_int32_t bytes) { return (((double)bytes) / PERIOD) / 1024; }
+float tokbps(u_int64_t bytes) { return (((double)bytes) / PERIOD) / 1024; }
 
 void process_init() {
   unknowntcp = new Process(0, "", "unknown TCP");
@@ -94,7 +94,7 @@ int Process::getLastPacket() {
 
 /** Get the kb/s values for this process */
 void Process::getkbps(float *recvd, float *sent) {
-  u_int32_t sum_sent = 0, sum_recv = 0;
+  u_int64_t sum_sent = 0, sum_recv = 0;
 
   /* walk though all this process's connections, and sum
    * them up */
@@ -102,6 +102,9 @@ void Process::getkbps(float *recvd, float *sent) {
   ConnList *previous = NULL;
   while (curconn != NULL) {
     if (curconn->getVal()->getLastPacket() <= curtime.tv_sec - CONNTIMEOUT) {
+      /* capture sent and received totals before deleting */
+      this->sent_by_closed_bytes += curconn->getVal()->sumSent;
+      this->rcvd_by_closed_bytes += curconn->getVal()->sumRecv;
       /* stalled connection, remove. */
       ConnList *todelete = curconn;
       Connection *conn_todelete = curconn->getVal();
@@ -113,7 +116,7 @@ void Process::getkbps(float *recvd, float *sent) {
       delete (todelete);
       delete (conn_todelete);
     } else {
-      u_int32_t sent = 0, recv = 0;
+      u_int64_t sent = 0, recv = 0;
       curconn->getVal()->sumanddel(curtime, &recv, &sent);
       sum_sent += sent;
       sum_recv += recv;
@@ -126,8 +129,8 @@ void Process::getkbps(float *recvd, float *sent) {
 }
 
 /** get total values for this process */
-void Process::gettotal(u_int32_t *recvd, u_int32_t *sent) {
-  u_int32_t sum_sent = 0, sum_recv = 0;
+void Process::gettotal(u_int64_t *recvd, u_int64_t *sent) {
+  u_int64_t sum_sent = 0, sum_recv = 0;
   ConnList *curconn = this->connections;
   while (curconn != NULL) {
     Connection *conn = curconn->getVal();
@@ -137,12 +140,12 @@ void Process::gettotal(u_int32_t *recvd, u_int32_t *sent) {
   }
   // std::cout << "Sum sent: " << sum_sent << std::endl;
   // std::cout << "Sum recv: " << sum_recv << std::endl;
-  *recvd = sum_recv;
-  *sent = sum_sent;
+  *recvd = sum_recv + this->rcvd_by_closed_bytes;
+  *sent = sum_sent + this->sent_by_closed_bytes;
 }
 
 void Process::gettotalmb(float *recvd, float *sent) {
-  u_int32_t sum_sent = 0, sum_recv = 0;
+  u_int64_t sum_sent = 0, sum_recv = 0;
   gettotal(&sum_recv, &sum_sent);
   *recvd = tomb(sum_recv);
   *sent = tomb(sum_sent);
@@ -150,14 +153,14 @@ void Process::gettotalmb(float *recvd, float *sent) {
 
 /** get total values for this process */
 void Process::gettotalkb(float *recvd, float *sent) {
-  u_int32_t sum_sent = 0, sum_recv = 0;
+  u_int64_t sum_sent = 0, sum_recv = 0;
   gettotal(&sum_recv, &sum_sent);
   *recvd = tokb(sum_recv);
   *sent = tokb(sum_sent);
 }
 
 void Process::gettotalb(float *recvd, float *sent) {
-  u_int32_t sum_sent = 0, sum_recv = 0;
+  u_int64_t sum_sent = 0, sum_recv = 0;
   gettotal(&sum_recv, &sum_sent);
   // std::cout << "Total sent: " << sum_sent << std::endl;
   *sent = sum_sent;
@@ -225,7 +228,11 @@ Process *getProcess(unsigned long inode, const char *devicename) {
   if (proc != NULL)
     return proc;
 
-  Process *newproc = new Process(inode, devicename, node->name.c_str());
+  // extract program name and command line from data read from cmdline file
+  const char *prgname = node->cmdline.c_str();
+  const char *cmdline = prgname + strlen(prgname) + 1;
+
+  Process *newproc = new Process(inode, devicename, prgname, cmdline);
   newproc->pid = node->pid;
 
   char procdir[100];

@@ -28,13 +28,11 @@
 #include <cerrno>
 #include <cstdlib>
 #include <algorithm>
-///start
 #include <fstream>
 #include <iomanip>
 #include <ctime>
-#include <sys/sysctl.h>
-///end
 #include <ncurses.h>
+#include <sys/sysctl.h>
 #include "nethogs.h"
 #include "process.h"
 
@@ -132,7 +130,7 @@ std::string uid2username(uid_t uid) {
  * of the text exceeds a maximum. If the
  * text must be truncated, the string ".." will be rendered, followed by max_len
  * - 2 characters of the provided text.
- */
+ *//*
 static void mvaddstr_truncate_leading(int row, int col, const char *str,
                                       std::size_t str_len,
                                       std::size_t max_len) {
@@ -142,15 +140,15 @@ static void mvaddstr_truncate_leading(int row, int col, const char *str,
     mvaddstr(row, col, "..");
     addnstr(str + 2, max_len - 2);
   }
-}
+}*/
 
-/**
+/*
  * Render the provided text at the specified location, truncating if the length
  * of the text exceeds a maximum. If the
  * text must be truncated, the text will be rendered up to max_len - 2
  * characters and then ".." will be rendered.
  */
-
+/*
 static void mvaddstr_truncate_trailing(int row, int col, const char *str,
                                        std::size_t str_len,
                                        std::size_t max_len) {
@@ -160,7 +158,7 @@ static void mvaddstr_truncate_trailing(int row, int col, const char *str,
     mvaddnstr(row, col, str, max_len - 2);
     addstr("..");
   }
-}
+}*/
 
 
 ///start
@@ -224,6 +222,7 @@ void Line::show(int row, unsigned int proglen) {
   std::string filename=outFilePath;
   outfile.open(filename.c_str(), std::ofstream::app);
   char* x;
+  int _row=row;_row++;
   ///end
 
   ///TIME
@@ -240,7 +239,7 @@ void Line::show(int row, unsigned int proglen) {
 
   // PID column
   if (m_pid == 0){
-    mvaddch(row, column_offset_pid + COLUMN_WIDTH_PID - 1, '?');
+    ///mvaddch(row, column_offset_pid + COLUMN_WIDTH_PID - 1, '?');
     ///start
     for (int i=0;i<column_offset_pid + COLUMN_WIDTH_PID - 1;i++)
     	outfile<<" ";
@@ -248,7 +247,7 @@ void Line::show(int row, unsigned int proglen) {
     ///end
   }
   else{
-    mvprintw(row, column_offset_pid, COLUMN_FORMAT_PID, m_pid);
+    ///mvprintw(row, column_offset_pid, COLUMN_FORMAT_PID, m_pid);
     ///start
     for (int i=0;i<column_offset_pid;i++)
     	outfile<<" ";
@@ -260,7 +259,7 @@ void Line::show(int row, unsigned int proglen) {
   }
 
   std::string username = uid2username(m_uid);
-
+  /*/
   mvaddstr_truncate_trailing(row, column_offset_user, username.c_str(),
                              username.size(), COLUMN_WIDTH_USER);
   mvaddstr_truncate_leading(row, column_offset_program, m_name, strlen(m_name),
@@ -268,7 +267,7 @@ void Line::show(int row, unsigned int proglen) {
   mvaddstr(row, column_offset_dev, devicename);
   mvprintw(row, column_offset_sent, COLUMN_FORMAT_SENT, sent_value);
 
-  mvprintw(row, column_offset_received, COLUMN_FORMAT_RECEIVED, recv_value);
+  mvprintw(row, column_offset_received, COLUMN_FORMAT_RECEIVED, recv_value);/*/
 
   ///start
   currentIndex=column_offset_user-1;//for clarify
@@ -310,7 +309,7 @@ void Line::show(int row, unsigned int proglen) {
 
   ///end
 
-
+  /*/
   if (viewMode == VIEWMODE_KBPS) {
     mvaddstr(row, column_offset_unit, "KB/sec");
   } else if (viewMode == VIEWMODE_TOTAL_MB) {
@@ -319,7 +318,7 @@ void Line::show(int row, unsigned int proglen) {
     mvaddstr(row, column_offset_unit, "KB    ");
   } else if (viewMode == VIEWMODE_TOTAL_B) {
     mvaddstr(row, column_offset_unit, "B     ");
-  }
+  }/*/
 }
 
 void Line::log() {
@@ -357,14 +356,14 @@ int GreatestFirst(const void *ma, const void *mb) {
 
 ///modify here to add arguments
 void init_ui() {
-
+	/*
   WINDOW *screen = initscr();
 
   raw();
   noecho();
   cbreak();
 
-  nodelay(screen, TRUE);
+  nodelay(screen, TRUE);*/
   caption = new std::string("NetHogs");
   caption->append(getVersion());
 
@@ -426,16 +425,17 @@ void show_ncurses(Line *lines[], int nproc) {
   double sent_global = 0;
   double recv_global = 0;
 
-  getmaxyx(stdscr, rows, cols); /* find the boundaries of the screeen */
+  ///getmaxyx(stdscr, rows, cols); /* find the boundaries of the screeen */
   ///seems no need for terminal display, I want to set the width of output file fixed
   cols=95;
 
+  /*/
   if (cols < 62) {
     erase();
     mvprintw(0, 0,
              "The terminal is too narrow! Please make it wider.\nI'll wait...");
     return;
-  }
+  }/*/
 
   if (cols > PROGNAME_WIDTH)
     cols = PROGNAME_WIDTH;
@@ -468,14 +468,14 @@ void show_ncurses(Line *lines[], int nproc) {
 
   outfile.close();
   ///end
-
+  /*/
   erase();
   mvprintw(0, 0, "%s", caption->c_str());
   attron(A_REVERSE);
   mvprintw(2, 0,
            "    PID USER     %-*.*s  DEV        SENT      RECEIVED       ",
            proglen, proglen, "PROGRAM");
-  attroff(A_REVERSE);
+  attroff(A_REVERSE);/*/
   /* print them */
 
   ///if there is no io for specified process, I also need to display 0 for it
@@ -510,6 +510,7 @@ void show_ncurses(Line *lines[], int nproc) {
   ofile<<"\n\n\n";*/
   ///end
 
+  /*/
   attron(A_REVERSE);
   int totalrow = std::min(rows - 1, 3 + 1 + i);
   mvprintw(totalrow, 0, "  TOTAL        %-*.*s          %11.3f %11.3f ",
@@ -525,7 +526,7 @@ void show_ncurses(Line *lines[], int nproc) {
   }
   attroff(A_REVERSE);
   mvprintw(totalrow + 1, 0, "");
-  refresh();
+  refresh();/*/
 }
 
 
@@ -554,13 +555,12 @@ void do_refresh() {
     // in the last CONNTIMEOUT seconds.
 	 ///start
 
-	  /*
 	  if (tracingPid!=0){
 		if (curproc->getVal()->pid!=(pid_t)tracingPid){
 			 curproc = curproc->next;
 			continue;
 		}
-	}*/
+	}
 	///end
 
     assert(curproc->getVal() != NULL);
