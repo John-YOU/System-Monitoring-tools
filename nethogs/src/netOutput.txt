@@ -1,0 +1,2 @@
+NetHogs version modi
+    PID USER     PROGRAM                    DEV        SENT      RECEIVED       
