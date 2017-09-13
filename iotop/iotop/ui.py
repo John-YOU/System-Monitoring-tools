@@ -490,7 +490,7 @@ class IOTopUI(object):
                 outputPath=self.options.fpath
                 file=open(outputPath,'a+')
             else:
-                file = open('flush.txt', 'a+')
+                file = open('diskIO.txt', 'a+')
             _titles = ['TIME                 '] + titles
             file.write(''.join(_titles)+"\n")
             file.close()
@@ -508,7 +508,11 @@ class IOTopUI(object):
                 self.options.pids[0],
                 "The process has no IO now    iotop will update data when active.")
             _tracingLine=_current_time+tracingLine
-            file = open('flush.txt', 'a+')
+            if self.options.fpath:
+                outputPath=self.options.fpath
+                file=open(outputPath,'a+')
+            else:
+                file = open('diskIO.txt', 'a+')
             file.write(''.join(_tracingLine)+"\n")
             file.close()
         ##

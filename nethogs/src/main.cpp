@@ -46,15 +46,16 @@ static void help(bool iserror) {
   output << "       -P : id of the process that to be traced\n";
   output << "       -f : the file output path\n";
   output << "		-s : sort output by sent column.\n";
-  output << "   -a : monitor all devices, even loopback/stopped ones.\n";
+  output << "   	-a : monitor all devices, even loopback/stopped ones.\n";
   output << "		device : device(s) to monitor. default is all "
             "interfaces up and running excluding loopback\n";
   output << std::endl;
+  /*
   output << "When nethogs is running, press:\n";
   output << " q: quit\n";
   output << " s: sort by SENT traffic\n";
   output << " r: sort by RECEIVE traffic\n";
-  output << " m: switch between total (KB, B, MB) and KB/s mode\n";
+  output << " m: switch between total (KB, B, MB) and KB/s mode\n";*/
 }
 
 void quit_cb(int /* i */) {
